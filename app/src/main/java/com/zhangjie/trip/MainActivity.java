@@ -43,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
         Log.i(TAG, "onStart: ");
         mLocationService= ((LocationApplication) getApplication()).LocationService;
         mLocationService.registerListener(mListener);
+        int type = 0;
         if (type == 0) {
             mLocationService.setLocationOption(mLocationService.getDefaultLocationClientOption());
         } else if (type == 1) {
