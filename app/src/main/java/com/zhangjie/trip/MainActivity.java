@@ -1,6 +1,15 @@
 package com.zhangjie.trip;
 
+import android.Manifest;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.support.annotation.NonNull;
+import android.support.annotation.RequiresApi;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -8,21 +17,40 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
+import com.baidu.location.BDLocation;
 import com.baidu.location.BDLocationListener;
 import com.baidu.location.LocationClient;
+import com.baidu.location.Poi;
 import com.baidu.mapapi.SDKInitializer;
 import com.baidu.mapapi.map.MapView;
 import com.zhangjie.trip.service.LocationService;
+import com.zhangjie.trip.utils.Utils;
 
-import static android.R.attr.type;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
-    private static final String TAG ="zhangjie map";
+    private static final String TAG = "zhangjie map";
+    private static final int UPDATE_LOCATE =0;
+    private static final int BAIDU_READ_PHONE_STATE =100;
     private MapView myMap;
     private FloatingActionButton fab;
-    private LocationClient mLocationClient=null;
-    private BDLocationListener mListener=new MyLocationListener();
+    private LocationClient mLocationClient = null;
     private LocationService mLocationService;
+    private LocationManager locationManager;
+    private String provider;
+    private Context mContext;
+
+    private Handler mHandler=new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch (msg.what){
+                case UPDATE_LOCATE:
+                    Utils.makeToast(getApplicationContext(),msg.getData().getString("location"));
+                    break;
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,24 +59,51 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        myMap= (MapView) findViewById(R.id.bmapView);
 
-        //fab
+        myMap = (MapView) findViewById(R.id.bmapView);
         fab = (FloatingActionButton) findViewById(R.id.fab);
+        mContext=getApplicationContext();
+
+        // 申请一个（或多个）权限，并提供用于回调返回的获取码（用户定义)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if(mContext.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) !=
+                    PackageManager.PERMISSION_GRANTED&&mContext.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) !=
+                    PackageManager.PERMISSION_GRANTED) {
+
+                requestPermissions( new String[]{Manifest.permission.ACCESS_COARSE_LOCATION
+                ,Manifest.permission.ACCESS_FINE_LOCATION},BAIDU_READ_PHONE_STATE);
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode){
+            case 1:
+                if (grantResults[0]==PackageManager.PERMISSION_GRANTED){
+                    //获取到权限
+                    Utils.makeToast(mContext,"获得了权限");
+                }else{
+                    Utils.makeToast(mContext,"未获取到权限");
+                    finish();
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void initLocate(){
+        mLocationService= ((LocationApplication) getApplication()).LocationService;
+        mLocationService.registerListener(mListener);
+        mLocationService.setLocationOption(mLocationService.getDefaultLocationClientOption());
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        Log.i(TAG, "onStart: ");
-        mLocationService= ((LocationApplication) getApplication()).LocationService;
-        mLocationService.registerListener(mListener);
-        int type = 0;
-        if (type == 0) {
-            mLocationService.setLocationOption(mLocationService.getDefaultLocationClientOption());
-        } else if (type == 1) {
-            mLocationService.setLocationOption(mLocationService.getOption());
-        }
+        initLocate();
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -66,6 +121,20 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    public void sendLocation(final String location){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Message msg=new Message();
+                msg.what=UPDATE_LOCATE;
+                Bundle bundle=new Bundle();
+                bundle.putString("location",location);
+                msg.setData(bundle);
+                mHandler.sendMessage(msg);
+            }
+        }).start();
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -79,4 +148,97 @@ public class MainActivity extends AppCompatActivity {
         myMap.onResume();
         Log.i(TAG, "onResume: ");
     }
+
+    private BDLocationListener mListener=new BDLocationListener() {
+        @Override
+        public void onReceiveLocation(BDLocation location) {
+            mLocationService.stop();
+            StringBuffer sb=new StringBuffer(256);
+            sb.append("time:");
+            sb.append(location.getTime());
+            sb.append("\nerror code : ");
+            sb.append(location.getLocType());    //获取类型类型
+
+            sb.append("\nlatitude : ");
+            sb.append(location.getLatitude());    //获取纬度信息
+
+            sb.append("\nlontitude : ");
+            sb.append(location.getLongitude());    //获取经度信息
+
+            sb.append("\nradius : ");
+            sb.append(location.getRadius());    //获取定位精准度
+
+            if (location.getLocType() == BDLocation.TypeGpsLocation){
+
+                // GPS定位结果
+                sb.append("\nspeed : ");
+                sb.append(location.getSpeed());    // 单位：公里每小时
+
+                sb.append("\nsatellite : ");
+                sb.append(location.getSatelliteNumber());    //获取卫星数
+
+                sb.append("\nheight : ");
+                sb.append(location.getAltitude());    //获取海拔高度信息，单位米
+
+                sb.append("\ndirection : ");
+                sb.append(location.getDirection());    //获取方向信息，单位度
+
+                sb.append("\naddr : ");
+                sb.append(location.getAddrStr());    //获取地址信息
+
+                sb.append("\ndescribe : ");
+                sb.append("gps定位成功");
+
+            } else if (location.getLocType() == BDLocation.TypeNetWorkLocation){
+
+                // 网络定位结果
+                sb.append("\naddr : ");
+                sb.append(location.getAddrStr());    //获取地址信息
+
+                sb.append("\noperationers : ");
+                sb.append(location.getOperators());    //获取运营商信息
+
+                sb.append("\ndescribe : ");
+                sb.append("网络定位成功");
+
+            } else if (location.getLocType() == BDLocation.TypeOffLineLocation) {
+
+                // 离线定位结果
+                sb.append("\ndescribe : ");
+                sb.append("离线定位成功，离线定位结果也是有效的");
+
+            } else if (location.getLocType() == BDLocation.TypeServerError) {
+
+                sb.append("\ndescribe : ");
+                sb.append("服务端网络定位失败，可以反馈IMEI号和大体定位时间到loc-bugs@baidu.com，会有人追查原因");
+
+            } else if (location.getLocType() == BDLocation.TypeNetWorkException) {
+
+                sb.append("\ndescribe : ");
+                sb.append("网络不同导致定位失败，请检查网络是否通畅");
+
+            } else if (location.getLocType() == BDLocation.TypeCriteriaException) {
+
+                sb.append("\ndescribe : ");
+                sb.append("无法获取有效定位依据导致定位失败，一般是由于手机的原因，处于飞行模式下一般会造成这种结果，可以试着重启手机");
+
+            }
+
+            sb.append("\nlocationdescribe : ");
+            sb.append(location.getLocationDescribe());    //位置语义化信息
+
+            List<Poi> list = location.getPoiList();    // POI数据
+            if (list != null) {
+                sb.append("\npoilist size = : ");
+                sb.append(list.size());
+                for (Poi p : list) {
+                    sb.append("\npoi= : ");
+                    sb.append(p.getId() + " " + p.getName() + " " + p.getRank());
+                }
+            }
+            Log.i("BaiduLocationApiDem", sb.toString());
+            sendLocation(sb.toString());
+        }
+    };
 }
+

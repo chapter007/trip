@@ -5,6 +5,7 @@ import com.baidu.location.LocationClient;
 import com.baidu.location.LocationClientOption;
 import com.baidu.location.LocationClientOption.LocationMode;
 import android.content.Context;
+import android.util.Log;
 
 /**
  *
@@ -12,6 +13,7 @@ import android.content.Context;
  *
  */
 public class LocationService {
+    private static final String TAG ="LocationService";
     private LocationClient client = null;
     private LocationClientOption mOption,DIYoption;
     private Object  objLock = new Object();
