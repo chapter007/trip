@@ -1,7 +1,8 @@
-package com.zhangjie.trip;
+package com.zhangjie.trip.activity;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.os.Build;
@@ -14,8 +15,13 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ZoomControls;
 
 import com.baidu.location.BDLocation;
 import com.baidu.location.BDLocationListener;
@@ -24,11 +30,18 @@ import com.baidu.location.LocationClientOption;
 import com.baidu.location.Poi;
 import com.baidu.mapapi.SDKInitializer;
 import com.baidu.mapapi.map.BaiduMap;
+import com.baidu.mapapi.map.BitmapDescriptor;
+import com.baidu.mapapi.map.BitmapDescriptorFactory;
+import com.baidu.mapapi.map.MapPoi;
 import com.baidu.mapapi.map.MapStatus;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
+import com.baidu.mapapi.map.MarkerOptions;
+import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.model.LatLng;
+import com.zhangjie.trip.LocationApplication;
+import com.zhangjie.trip.R;
 import com.zhangjie.trip.service.LocationService;
 import com.zhangjie.trip.utils.Utils;
 
@@ -42,10 +55,11 @@ public class MainActivity extends AppCompatActivity {
     private FloatingActionButton fab;
     private LocationClient mLocationClient = null;
     private LocationService mLocationService;
-    private LocationManager locationManager;
     private Context mContext;
     private BaiduMap mBaiduMap;
-
+    private Button changNavMode;
+    private MyLocationConfiguration.LocationMode mCurrentMode;
+    private BitmapDescriptor mCurrentMarker;
 
     private Handler mHandler=new Handler(){
         @Override
@@ -58,6 +72,11 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     };
+    private String touchType;
+    private LatLng currentPt;
+    private TextView mStateBar;
+    private BitmapDescriptor bdA = BitmapDescriptorFactory
+            .fromResource(R.drawable.icon_marka);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,7 +88,10 @@ public class MainActivity extends AppCompatActivity {
 
         myMap = (MapView) findViewById(R.id.bmapView);
         fab = (FloatingActionButton) findViewById(R.id.fab);
+        mStateBar= (TextView) findViewById(R.id.status_bar);
+        changNavMode= (Button) findViewById(R.id.change_nav_mode);
         mContext=getApplicationContext();
+        mCurrentMode= MyLocationConfiguration.LocationMode.NORMAL;
         mBaiduMap=myMap.getMap();
         mBaiduMap.setMyLocationEnabled(true);
         mLocationClient=new LocationClient(mContext);
@@ -83,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
         option.setScanSpan(1000);
         mLocationClient.setLocOption(option);
         mLocationClient.start();
-
+        initListener();
     }
 
     private void checkPermission(){
@@ -127,23 +149,127 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        fab.setVisibility(View.GONE);
-        //initLocate();
-        /*fab.setOnClickListener(new View.OnClickListener() {
+        //hide baidu logo
+        View child = myMap.getChildAt(1);
+        if (child != null && (child instanceof ImageView || child instanceof ZoomControls)) {
+            child.setVisibility(View.INVISIBLE);
+        }
+        myMap.showZoomControls(false);
+        changNavMode.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //mLocationService.start();
-                Toast.makeText(MainActivity.this,"start locate",Toast.LENGTH_SHORT).show();
+                switch (mCurrentMode){
+                    case NORMAL:
+                        changNavMode.setText("跟随");
+                        mCurrentMode = MyLocationConfiguration.LocationMode.FOLLOWING;
+                        mBaiduMap.setMyLocationConfiguration(new MyLocationConfiguration(
+                                mCurrentMode, true, mCurrentMarker));
+                        MapStatus.Builder builder = new MapStatus.Builder();
+                        builder.overlook(0);
+                        mBaiduMap.animateMapStatus(MapStatusUpdateFactory.newMapStatus(builder.build()));
+                        break;
+                    case FOLLOWING:
+                        changNavMode.setText("罗盘");
+                        mCurrentMode = MyLocationConfiguration.LocationMode.COMPASS;
+                        mBaiduMap.setMyLocationConfiguration(new MyLocationConfiguration(
+                                mCurrentMode, true, mCurrentMarker));
+                        break;
+                    case COMPASS:
+                        changNavMode.setText("普通");
+                        mCurrentMode = MyLocationConfiguration.LocationMode.NORMAL;
+                        mBaiduMap.setMyLocationConfiguration(new MyLocationConfiguration(
+                                mCurrentMode, true, mCurrentMarker));
+                        MapStatus.Builder builder1 = new MapStatus.Builder();
+                        builder1.overlook(0);
+                        mBaiduMap.animateMapStatus(MapStatusUpdateFactory.newMapStatus(builder1.build()));
+                        break;
+                }
             }
         });
-        fab.setOnLongClickListener(new View.OnLongClickListener() {
+        fab.setOnClickListener(new View.OnClickListener() {
             @Override
-            public boolean onLongClick(View view) {
-                //mLocationService.stop();
-                Toast.makeText(MainActivity.this,"stop locate",Toast.LENGTH_SHORT).show();
-                return true;
+            public void onClick(View view) {
+                Intent intent=new Intent(MainActivity.this,TripActivity.class);
+                startActivity(intent);
             }
-        });*/
+        });
+    }
+
+    /**
+     * 对地图事件的消息响应
+     */
+    private void initListener() {
+        mBaiduMap.setOnMapTouchListener(new BaiduMap.OnMapTouchListener() {
+
+            @Override
+            public void onTouch(MotionEvent event) {
+
+            }
+        });
+
+
+        mBaiduMap.setOnMapClickListener(new BaiduMap.OnMapClickListener() {
+            /**
+             * 单击地图
+             */
+            public void onMapClick(LatLng point) {
+                touchType = "单击地图";
+                currentPt = point;
+                updateMapState();
+            }
+
+            /**
+             * 单击地图中的POI点
+             */
+            public boolean onMapPoiClick(MapPoi poi) {
+                touchType = "单击POI点";
+                currentPt = poi.getPosition();
+                updateMapState();
+                return false;
+            }
+        });
+        mBaiduMap.setOnMapLongClickListener(new BaiduMap.OnMapLongClickListener() {
+            /**
+             * 长按地图
+             */
+            public void onMapLongClick(LatLng point) {
+                touchType = "长按";
+                currentPt = point;
+                updateMapState();
+            }
+        });
+        mBaiduMap.setOnMapDoubleClickListener(new BaiduMap.OnMapDoubleClickListener() {
+            /**
+             * 双击地图
+             */
+            public void onMapDoubleClick(LatLng point) {
+                touchType = "双击";
+                currentPt = point;
+                updateMapState();
+            }
+        });
+    }
+
+    private void updateMapState() {
+        if (mStateBar == null) {
+            return;
+        }
+        String state = "";
+        if (currentPt == null) {
+            state = "点击、长按、双击地图以获取经纬度和地图状态";
+        } else {
+            state = String.format(touchType + ",当前经度： %f 当前纬度：%f",
+                    currentPt.longitude, currentPt.latitude);
+            MarkerOptions ooA = new MarkerOptions().position(currentPt).icon(bdA);
+            mBaiduMap.clear();
+            mBaiduMap.addOverlay(ooA);
+        }
+        state += "\n";
+        MapStatus ms = mBaiduMap.getMapStatus();
+        state += String.format(
+                "zoom=%.1f rotate=%d overlook=%d",
+                ms.zoom, (int) ms.rotate, (int) ms.overlook);
+        mStateBar.setText(state);
     }
 
     public void sendLocation(final String location){

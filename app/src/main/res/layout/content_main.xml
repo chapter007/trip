@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context="com.zhangjie.trip.MainActivity"
+    tools:context="com.zhangjie.trip.activity.MainActivity"
     tools:showIn="@layout/activity_main">
 
 
@@ -14,5 +14,11 @@
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:clickable="true" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/status_bar"
+        android:textColor="#000"/>
 
 </android.support.constraint.ConstraintLayout>
