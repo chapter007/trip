@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">trip</string>
-    <string name="trip_route">出行路径规划</string>
+    <string name="trip_route">出行路径规划结果</string>
+    <string name="trip_plan">出行路径规划</string>
     <string name="action_settings">Settings</string>
     <string name="action_normal">普通</string>
 </resources>

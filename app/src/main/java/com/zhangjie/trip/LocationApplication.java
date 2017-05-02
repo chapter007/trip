@@ -3,6 +3,7 @@ package com.zhangjie.trip;
 import android.app.Application;
 import android.os.Vibrator;
 
+import com.baidu.mapapi.CoordType;
 import com.baidu.mapapi.SDKInitializer;
 import com.zhangjie.trip.service.LocationService;
 
@@ -20,5 +21,6 @@ public class LocationApplication extends Application{
         LocationService=new LocationService(getApplicationContext());
         mVibrator= (Vibrator) getApplicationContext().getSystemService(VIBRATOR_SERVICE);
         SDKInitializer.initialize(getApplicationContext());
+        SDKInitializer.setCoordType(CoordType.BD09LL);
     }
 }
