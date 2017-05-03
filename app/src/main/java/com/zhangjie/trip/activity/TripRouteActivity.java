@@ -58,8 +58,8 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
         setContentView(R.layout.activity_trip_route);
         myMap= (MapView) findViewById(R.id.my_map_view);
         mBaiduMap=myMap.getMap();
-        stNode=PlanNode.withCityNameAndPlaceName("马鞍山",startPoint);
-        enNode=PlanNode.withCityNameAndPlaceName("马鞍山",endPoint);
+        stNode=PlanNode.withCityNameAndPlaceName("合肥",startPoint);
+        enNode=PlanNode.withCityNameAndPlaceName("合肥",endPoint);
 
         mSearch = RoutePlanSearch.newInstance();
         mSearch.setOnGetRoutePlanResultListener(this);
@@ -70,7 +70,7 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
         super.onStart();
         if (method.equals("bus")){
             mSearch.transitSearch((new TransitRoutePlanOption())
-                    .from(stNode).city("马鞍山").to(enNode));
+                    .from(stNode).city("合肥").to(enNode));
         }else if (method.equals("car")){
             mSearch.drivingSearch((new DrivingRoutePlanOption())
                     .from(stNode).to(enNode));

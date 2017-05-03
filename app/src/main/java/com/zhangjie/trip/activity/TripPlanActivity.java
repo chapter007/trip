@@ -43,12 +43,9 @@ public class TripPlanActivity extends AppCompatActivity implements View.OnClickL
     protected void onStart() {
         super.onStart();
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        stPoint=startPoint.getText().toString();
-        edPoint=endPoint.getText().toString();
+
 
         intent=new Intent(TripPlanActivity.this,TripRouteActivity.class);
-        intent.putExtra("startPoint",stPoint);
-        intent.putExtra("endPoint",edPoint);
 
         bus.setOnClickListener(this);
         car.setOnClickListener(this);
@@ -73,6 +70,11 @@ public class TripPlanActivity extends AppCompatActivity implements View.OnClickL
 
     @Override
     public void onClick(View view) {
+        stPoint=startPoint.getText().toString();
+        edPoint=endPoint.getText().toString();
+        intent.putExtra("startPoint",stPoint);
+        intent.putExtra("endPoint",edPoint);
+
         switch (view.getId()){
             case R.id.bus:
                 intent.putExtra("method","bus");
