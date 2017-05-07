@@ -1,12 +1,17 @@
 package com.zhangjie.trip.activity;
 
+import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.view.Window;
+import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -40,6 +45,8 @@ import com.zhangjie.trip.adapter.RouteLineAdapter;
 import com.zhangjie.trip.overlay.MyTransitRouteOverlay;
 import com.zhangjie.trip.overlay.TransitRouteOverlay;
 
+import java.util.List;
+
 /**
  * Created by zhangjie on 2017/5/2.
  */
@@ -55,7 +62,6 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
     private RouteLine<TransitRouteLine.TransitStep> route;
     private int nodeIndex=-1;
     private TransitRouteOverlay routeOverlay;
-    private Button mBtnPre,mBtnNext;
     private int nowSearchType;
     private MassTransitRouteLine massroute;
     private MassTransitRouteResult nowResultmass;
@@ -71,14 +77,14 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
 
         setContentView(R.layout.activity_trip_route);
         myMap= (MapView) findViewById(R.id.my_map_view);
-        mBtnPre = (Button) findViewById(R.id.pre);
-        mBtnNext = (Button) findViewById(R.id.next);
         mBaiduMap=myMap.getMap();
         stNode=PlanNode.withCityNameAndPlaceName("北京",startPoint);
         enNode=PlanNode.withCityNameAndPlaceName("北京",endPoint);
 
         mSearch = RoutePlanSearch.newInstance();
         mSearch.setOnGetRoutePlanResultListener(this);
+
+
     }
 
     public void nodeClick(View v) {
@@ -221,13 +227,12 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
         }
         if (result.error == SearchResult.ERRORNO.AMBIGUOUS_ROURE_ADDR) {
             // 起终点或途经点地址有岐义，通过以下接口获取建议查询信息
-            // result.getSuggestAddrInfo()
+            result.getSuggestAddrInfo();
             return;
         }
         if (result.error == SearchResult.ERRORNO.NO_ERROR) {
             nodeIndex = -1;
-            //mBtnPre.setVisibility(View.VISIBLE);
-            //mBtnNext.setVisibility(View.VISIBLE);
+
 
 
             if (result.getRouteLines().size() > 1) {
@@ -294,4 +299,61 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
     public void onGetBikingRouteResult(BikingRouteResult bikingRouteResult) {
 
     }
+
+    class MyTransitDlg extends Dialog {
+        private List<? extends RouteLine> mtransitRouteLines;
+        private ListView transitRouteList;
+        private RouteLineAdapter mTransitAdapter;
+
+        OnItemInDlgClickListener onItemInDlgClickListener;
+
+        public MyTransitDlg(Context context, int theme) {
+            super(context, theme);
+        }
+
+        public MyTransitDlg(Context context, List<? extends RouteLine> transitRouteLines, RouteLineAdapter.Type
+                type) {
+            this(context, 0);
+            mtransitRouteLines = transitRouteLines;
+            mTransitAdapter = new RouteLineAdapter(context, mtransitRouteLines, type);
+            requestWindowFeature(Window.FEATURE_NO_TITLE);
+        }
+
+        @Override
+        public void setOnDismissListener(OnDismissListener listener) {
+            super.setOnDismissListener(listener);
+        }
+
+        @Override
+        protected void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            setContentView(R.layout.activity_transit_dialog);
+
+            transitRouteList = (ListView) findViewById(R.id.transitList);
+            transitRouteList.setAdapter(mTransitAdapter);
+
+            transitRouteList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    onItemInDlgClickListener.onItemClick(position);
+
+                    dismiss();
+                    hasShownDialogue = false;
+                }
+            });
+        }
+
+        public void setOnItemInDlgClickLinster(OnItemInDlgClickListener itemListener) {
+            onItemInDlgClickListener = itemListener;
+        }
+    }
+
+    interface OnItemInDlgClickListener {
+        public void onItemClick(int position);
+    }
+
 }
+
+
+
