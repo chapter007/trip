@@ -9,6 +9,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 
+import com.zhangjie.trip.MyBdLocation;
 import com.zhangjie.trip.R;
 
 /**
@@ -22,10 +23,15 @@ public class TripPlanActivity extends AppCompatActivity implements View.OnClickL
     private String stPoint,edPoint;
     private Button bus,bike,walk,car;
     private Intent intent;
+    private double mLocation_x,mLocation_y;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        intent=getIntent();
+        mLocation_x= intent.getDoubleExtra("Location_x",0);
+        mLocation_y= intent.getDoubleExtra("Location_y",0);
+
         setContentView(R.layout.activity_trip_plan);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);

@@ -41,7 +41,10 @@ import com.zhangjie.trip.R;
 import com.zhangjie.trip.service.LocationService;
 import com.zhangjie.trip.utils.Utils;
 
+import java.io.Serializable;
 import java.util.List;
+
+
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "zhangjie map";
@@ -56,6 +59,12 @@ public class MainActivity extends AppCompatActivity {
     private Button changNavMode;
     private MyLocationConfiguration.LocationMode mCurrentMode;
     private BitmapDescriptor mCurrentMarker;
+    private double mCurrentLat=0.0;
+    private double mCurrentLon=0.0;
+    private float mCurrentAccracy;
+    private MyLocationData locData;
+    private float mCurrentDirection=0;
+    private boolean isFirstLoc=true;
 
     private Handler mHandler=new Handler(){
         @Override
@@ -184,6 +193,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Intent intent=new Intent(MainActivity.this,TripPlanActivity.class);
+                intent.putExtra("Location_x",mCurrentLat);
+                intent.putExtra("Location_y",mCurrentLon);
                 startActivity(intent);
             }
         });
@@ -294,12 +305,7 @@ public class MainActivity extends AppCompatActivity {
         Log.i(TAG, "onResume: ");
     }
 
-    private double mCurrentLat=0.0;
-    private double mCurrentLon=0.0;
-    private float mCurrentAccracy;
-    private MyLocationData locData;
-    private float mCurrentDirection=0;
-    private boolean isFirstLoc=true;
+
 
     private BDLocationListener mListener=new BDLocationListener() {
         @Override
