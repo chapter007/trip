@@ -20,6 +20,8 @@ import com.baidu.mapapi.map.InfoWindow;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.model.LatLng;
+import com.baidu.mapapi.overlayutil.DrivingRouteOverlay;
+import com.baidu.mapapi.overlayutil.OverlayManager;
 import com.baidu.mapapi.search.core.RouteLine;
 import com.baidu.mapapi.search.core.SearchResult;
 import com.baidu.mapapi.search.geocode.GeoCodeOption;
@@ -48,6 +50,7 @@ import com.baidu.mapapi.search.route.WalkingRoutePlanOption;
 import com.baidu.mapapi.search.route.WalkingRouteResult;
 import com.zhangjie.trip.R;
 import com.zhangjie.trip.adapter.RouteLineAdapter;
+import com.zhangjie.trip.overlay.MyDrivingRouteOverlay;
 import com.zhangjie.trip.overlay.MyTransitRouteOverlay;
 import com.zhangjie.trip.overlay.TransitRouteOverlay;
 import com.zhangjie.trip.utils.Utils;
@@ -67,9 +70,9 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
     private PlanNode stNode,enNode;
     private TransitRouteResult nowResultransit;
     private boolean hasShownDialogue=false;
-    private RouteLine<TransitRouteLine.TransitStep> route;
+    private RouteLine route=null;
     private int nodeIndex=-1;
-    private TransitRouteOverlay routeOverlay;
+    private OverlayManager routeOverlay;
     private int nowSearchType;
     private MassTransitRouteLine massroute;
     private MassTransitRouteResult nowResultmass;
@@ -77,6 +80,7 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
     private double stPoint_x,stPoint_y;
     private LatLng mLatLng;
     private GeoCoder mGeoCoder;
+    private DrivingRouteResult nowResultdrive;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -290,8 +294,62 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
     }
 
     @Override
-    public void onGetDrivingRouteResult(DrivingRouteResult drivingRouteResult) {
+    public void onGetDrivingRouteResult(DrivingRouteResult result) {
+        if (result == null || result.error != SearchResult.ERRORNO.NO_ERROR) {
+            Toast.makeText(TripRouteActivity.this, "抱歉，未找到结果", Toast.LENGTH_SHORT).show();
+        }
+        if (result.error == SearchResult.ERRORNO.AMBIGUOUS_ROURE_ADDR) {
+            // 起终点或途经点地址有岐义，通过以下接口获取建议查询信息
+            // result.getSuggestAddrInfo()
+            return;
+        }
+        if (result.error == SearchResult.ERRORNO.NO_ERROR) {
+            nodeIndex = -1;
 
+
+            if (result.getRouteLines().size() > 1) {
+                nowResultdrive = result;
+                if (!hasShownDialogue) {
+                    MyTransitDlg myTransitDlg = new MyTransitDlg(TripRouteActivity.this,
+                            result.getRouteLines(),
+                            RouteLineAdapter.Type.DRIVING_ROUTE);
+                    myTransitDlg.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                        @Override
+                        public void onDismiss(DialogInterface dialog) {
+                            hasShownDialogue = false;
+                        }
+                    });
+                    myTransitDlg.setOnItemInDlgClickLinster(new OnItemInDlgClickListener() {
+                        public void onItemClick(int position) {
+                            route = nowResultdrive.getRouteLines().get(position);
+                            DrivingRouteOverlay overlay = new MyDrivingRouteOverlay(mBaiduMap);
+                            mBaiduMap.setOnMarkerClickListener(overlay);
+                            routeOverlay = overlay;
+                            overlay.setData(nowResultdrive.getRouteLines().get(position));
+                            overlay.addToMap();
+                            overlay.zoomToSpan();
+                        }
+
+                    });
+                    myTransitDlg.show();
+                    hasShownDialogue = true;
+                }
+            } else if (result.getRouteLines().size() == 1) {
+                route = result.getRouteLines().get(0);
+                DrivingRouteOverlay overlay = new MyDrivingRouteOverlay(mBaiduMap);
+                routeOverlay = overlay;
+                mBaiduMap.setOnMarkerClickListener(overlay);
+                overlay.setData(result.getRouteLines().get(0));
+                overlay.addToMap();
+                overlay.zoomToSpan();
+                //mBtnPre.setVisibility(View.VISIBLE);
+                //mBtnNext.setVisibility(View.VISIBLE);
+            } else {
+                Log.d("route result", "结果数<0");
+                return;
+            }
+
+        }
     }
 
     @Override
