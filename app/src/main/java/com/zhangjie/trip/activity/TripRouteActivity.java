@@ -22,6 +22,12 @@ import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.model.LatLng;
 import com.baidu.mapapi.search.core.RouteLine;
 import com.baidu.mapapi.search.core.SearchResult;
+import com.baidu.mapapi.search.geocode.GeoCodeOption;
+import com.baidu.mapapi.search.geocode.GeoCodeResult;
+import com.baidu.mapapi.search.geocode.GeoCoder;
+import com.baidu.mapapi.search.geocode.OnGetGeoCoderResultListener;
+import com.baidu.mapapi.search.geocode.ReverseGeoCodeOption;
+import com.baidu.mapapi.search.geocode.ReverseGeoCodeResult;
 import com.baidu.mapapi.search.route.BikingRouteLine;
 import com.baidu.mapapi.search.route.BikingRoutePlanOption;
 import com.baidu.mapapi.search.route.BikingRouteResult;
@@ -44,6 +50,7 @@ import com.zhangjie.trip.R;
 import com.zhangjie.trip.adapter.RouteLineAdapter;
 import com.zhangjie.trip.overlay.MyTransitRouteOverlay;
 import com.zhangjie.trip.overlay.TransitRouteOverlay;
+import com.zhangjie.trip.utils.Utils;
 
 import java.util.List;
 
@@ -51,8 +58,9 @@ import java.util.List;
  * Created by zhangjie on 2017/5/2.
  */
 
-public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePlanResultListener{
-    private String startPoint,endPoint,method;
+public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePlanResultListener,
+        OnGetGeoCoderResultListener{
+    private String startPoint,endPoint,method,city;
     private MapView myMap;
     private BaiduMap mBaiduMap;
     private RoutePlanSearch mSearch;
@@ -66,28 +74,39 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
     private MassTransitRouteLine massroute;
     private MassTransitRouteResult nowResultmass;
     private TextView popupText;
+    private double stPoint_x,stPoint_y;
+    private LatLng mLatLng;
+    private GeoCoder mGeoCoder;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Intent intent=getIntent();
         startPoint=intent.getStringExtra("startPoint");
+
+        stPoint_x=intent.getDoubleExtra("Location_x",0);
+        stPoint_y=intent.getDoubleExtra("Location_y",0);
+        mLatLng=new LatLng(stPoint_x,stPoint_y);
+
         endPoint=intent.getStringExtra("endPoint");
         method=intent.getStringExtra("method");
 
         setContentView(R.layout.activity_trip_route);
         myMap= (MapView) findViewById(R.id.my_map_view);
         mBaiduMap=myMap.getMap();
-        stNode=PlanNode.withCityNameAndPlaceName("北京",startPoint);
-        enNode=PlanNode.withCityNameAndPlaceName("北京",endPoint);
+        mGeoCoder=GeoCoder.newInstance();
+        mGeoCoder.setOnGetGeoCodeResultListener(this);
+        //从经纬度找到地理位置
+        mGeoCoder.reverseGeoCode(new ReverseGeoCodeOption().location(mLatLng));
+
+
 
         mSearch = RoutePlanSearch.newInstance();
         mSearch.setOnGetRoutePlanResultListener(this);
 
-
     }
 
-    public void nodeClick(View v) {
+    /*public void nodeClick(View v) {
         LatLng nodeLocation = null;
         String nodeTitle = null;
         Object step = null;
@@ -195,24 +214,12 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
         popupText.setTextColor(0xFF000000);
         popupText.setText(nodeTitle);
         mBaiduMap.showInfoWindow(new InfoWindow(popupText, nodeLocation, 0));
-    }
+    }*/
 
     @Override
     protected void onStart() {
         super.onStart();
-        if (method.equals("bus")){
-            mSearch.transitSearch((new TransitRoutePlanOption())
-                    .from(stNode).city("北京").to(enNode));
-        }else if (method.equals("car")){
-            mSearch.drivingSearch((new DrivingRoutePlanOption())
-                    .from(stNode).to(enNode));
-        }else if (method.equals("walk")){
-            mSearch.walkingSearch((new WalkingRoutePlanOption())
-                    .from(stNode).to(enNode));
-        }else if (method.equals("bike")){
-            mSearch.bikingSearch((new BikingRoutePlanOption())
-                    .from(stNode).to(enNode));
-        }
+
     }
 
     @Override
@@ -232,9 +239,6 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
         }
         if (result.error == SearchResult.ERRORNO.NO_ERROR) {
             nodeIndex = -1;
-
-
-
             if (result.getRouteLines().size() > 1) {
                 nowResultransit = result;
                 if (!hasShownDialogue) {
@@ -298,6 +302,51 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
     @Override
     public void onGetBikingRouteResult(BikingRouteResult bikingRouteResult) {
 
+    }
+
+    @Override
+    public void onGetGeoCodeResult(GeoCodeResult result) {
+        //将地理位置编码成经纬度坐标结果，回调
+        if (result == null || result.error != SearchResult.ERRORNO.NO_ERROR) {
+            Utils.makeToast(TripRouteActivity.this,"抱歉，未能找到结果");
+            return;
+        }
+        Utils.makeToast(TripRouteActivity.this,result.getLocation().toString());
+    }
+
+    @Override
+    public void onGetReverseGeoCodeResult(ReverseGeoCodeResult result) {
+        //将经纬度反变成地理位置编码，回调
+        if (result == null || result.error != SearchResult.ERRORNO.NO_ERROR) {
+            Utils.makeToast(TripRouteActivity.this,"抱歉，未能找到结果");
+            return;
+        }
+        Utils.makeToast(TripRouteActivity.this,result.getAddress());
+        city=result.getAddressDetail().city;
+        StartSearch();
+    }
+
+    public void StartSearch(){
+        if(startPoint.isEmpty()){
+            stNode=PlanNode.withLocation(mLatLng);
+        }else{
+            stNode=PlanNode.withCityNameAndPlaceName(city,startPoint);
+        }
+        enNode=PlanNode.withCityNameAndPlaceName(city,endPoint);
+
+        if (method.equals("bus")){
+            mSearch.transitSearch((new TransitRoutePlanOption())
+                    .from(stNode).city(city).to(enNode));
+        }else if (method.equals("car")){
+            mSearch.drivingSearch((new DrivingRoutePlanOption())
+                    .from(stNode).to(enNode));
+        }else if (method.equals("walk")){
+            mSearch.walkingSearch((new WalkingRoutePlanOption())
+                    .from(stNode).to(enNode));
+        }else if (method.equals("bike")){
+            mSearch.bikingSearch((new BikingRoutePlanOption())
+                    .from(stNode).to(enNode));
+        }
     }
 
     class MyTransitDlg extends Dialog {

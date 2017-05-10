@@ -8,8 +8,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-
-import com.zhangjie.trip.MyBdLocation;
 import com.zhangjie.trip.R;
 
 /**
@@ -30,7 +28,7 @@ public class TripPlanActivity extends AppCompatActivity implements View.OnClickL
         super.onCreate(savedInstanceState);
         intent=getIntent();
         mLocation_x= intent.getDoubleExtra("Location_x",0);
-        mLocation_y= intent.getDoubleExtra("Location_y",0);
+        mLocation_y= intent.getDoubleExtra("Location_y",0);//获得当前经纬度
 
         setContentView(R.layout.activity_trip_plan);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -42,15 +40,12 @@ public class TripPlanActivity extends AppCompatActivity implements View.OnClickL
         walk= (Button) findViewById(R.id.walk);
         car= (Button) findViewById(R.id.car);
 
-
     }
 
     @Override
     protected void onStart() {
         super.onStart();
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-
-
         intent=new Intent(TripPlanActivity.this,TripRouteActivity.class);
 
         bus.setOnClickListener(this);
@@ -78,9 +73,11 @@ public class TripPlanActivity extends AppCompatActivity implements View.OnClickL
     public void onClick(View view) {
         stPoint=startPoint.getText().toString();
         edPoint=endPoint.getText().toString();
+
+        intent.putExtra("Location_x",mLocation_x);
+        intent.putExtra("Location_y",mLocation_y);
         intent.putExtra("startPoint",stPoint);
         intent.putExtra("endPoint",edPoint);
-
         switch (view.getId()){
             case R.id.bus:
                 intent.putExtra("method","bus");
