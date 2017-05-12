@@ -17,6 +17,7 @@ import android.widget.Toast;
 
 import com.baidu.mapapi.map.BaiduMap;
 import com.baidu.mapapi.map.InfoWindow;
+import com.baidu.mapapi.map.MapPoi;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.model.LatLng;
@@ -66,7 +67,7 @@ import java.util.List;
  */
 
 public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePlanResultListener,
-        OnGetGeoCoderResultListener{
+        OnGetGeoCoderResultListener,BaiduMap.OnMapClickListener{
     private String startPoint,endPoint,method,city;
     private MapView myMap;
     private BaiduMap mBaiduMap;
@@ -87,6 +88,7 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
     private DrivingRouteResult nowResultdrive;
     private WalkingRouteResult nowResultwalk;
     private BikingRouteResult nowResultbike;
+    private Button mBtnPre,mBtnNext;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -103,6 +105,11 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
 
         setContentView(R.layout.activity_trip_route);
         myMap= (MapView) findViewById(R.id.my_map_view);
+        mBtnNext= (Button) findViewById(R.id.next);
+        mBtnPre= (Button) findViewById(R.id.pre);
+
+        mBtnPre.setVisibility(View.INVISIBLE);
+        mBtnNext.setVisibility(View.INVISIBLE);
         mBaiduMap=myMap.getMap();
         mGeoCoder=GeoCoder.newInstance();
         mGeoCoder.setOnGetGeoCodeResultListener(this);
@@ -116,7 +123,7 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
 
     }
 
-    /*public void nodeClick(View v) {
+    public void nodeClick(View v) {
         LatLng nodeLocation = null;
         String nodeTitle = null;
         Object step = null;
@@ -224,7 +231,7 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
         popupText.setTextColor(0xFF000000);
         popupText.setText(nodeTitle);
         mBaiduMap.showInfoWindow(new InfoWindow(popupText, nodeLocation, 0));
-    }*/
+    }
 
     @Override
     protected void onStart() {
@@ -244,8 +251,8 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
         }
         if (result.error == SearchResult.ERRORNO.NO_ERROR) {
             nodeIndex = -1;
-            //mBtnPre.setVisibility(View.VISIBLE);
-            //mBtnNext.setVisibility(View.VISIBLE);
+            mBtnPre.setVisibility(View.VISIBLE);
+            mBtnNext.setVisibility(View.VISIBLE);
 
             if (result.getRouteLines().size() > 1) {
                 nowResultwalk = result;
@@ -403,8 +410,8 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
                 overlay.setData(result.getRouteLines().get(0));
                 overlay.addToMap();
                 overlay.zoomToSpan();
-                //mBtnPre.setVisibility(View.VISIBLE);
-                //mBtnNext.setVisibility(View.VISIBLE);
+                mBtnPre.setVisibility(View.VISIBLE);
+                mBtnNext.setVisibility(View.VISIBLE);
             } else {
                 Log.d("route result", "结果数<0");
                 return;
@@ -430,8 +437,8 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
         }
         if (result.error == SearchResult.ERRORNO.NO_ERROR) {
             nodeIndex = -1;
-            //mBtnPre.setVisibility(View.VISIBLE);
-            //mBtnNext.setVisibility(View.VISIBLE);
+            mBtnPre.setVisibility(View.VISIBLE);
+            mBtnNext.setVisibility(View.VISIBLE);
 
             if (result.getRouteLines().size() > 1) {
                 nowResultbike = result;
@@ -468,8 +475,8 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
                 overlay.setData(result.getRouteLines().get(0));
                 overlay.addToMap();
                 overlay.zoomToSpan();
-                //mBtnPre.setVisibility(View.VISIBLE);
-                //mBtnNext.setVisibility(View.VISIBLE);
+                mBtnPre.setVisibility(View.VISIBLE);
+                mBtnNext.setVisibility(View.VISIBLE);
             } else {
                 Log.d("route result", "结果数<0");
                 return;
@@ -521,6 +528,16 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
             mSearch.bikingSearch((new BikingRoutePlanOption())
                     .from(stNode).to(enNode));
         }
+    }
+
+    @Override
+    public void onMapClick(LatLng latLng) {
+        mBaiduMap.hideInfoWindow();
+    }
+
+    @Override
+    public boolean onMapPoiClick(MapPoi mapPoi) {
+        return false;
     }
 
     class MyTransitDlg extends Dialog {
