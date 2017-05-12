@@ -3,8 +3,6 @@
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-
-
     <com.baidu.mapapi.map.MapView
         android:id="@+id/my_map_view"
         android:layout_width="fill_parent"
@@ -41,4 +39,9 @@
             android:onClick="nodeClick" />
     </LinearLayout>
 
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="路线"
+        android:onClick="showRoute"/>
 </RelativeLayout>

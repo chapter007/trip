@@ -89,6 +89,7 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
     private WalkingRouteResult nowResultwalk;
     private BikingRouteResult nowResultbike;
     private Button mBtnPre,mBtnNext;
+    private MyTransitDlg myTransitDlg;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -120,6 +121,12 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
         mSearch = RoutePlanSearch.newInstance();
         mSearch.setOnGetRoutePlanResultListener(this);
 
+    }
+
+    public void showRoute(View v){
+        myTransitDlg.show();
+        hasShownDialogue = true;
+        routeOverlay.removeFromMap();
     }
 
     public void nodeClick(View v) {
@@ -256,7 +263,7 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
             if (result.getRouteLines().size() > 1) {
                 nowResultwalk = result;
                 if (!hasShownDialogue) {
-                    MyTransitDlg myTransitDlg = new MyTransitDlg(TripRouteActivity.this,
+                    myTransitDlg = new MyTransitDlg(TripRouteActivity.this,
                             result.getRouteLines(),
                             RouteLineAdapter.Type.WALKING_ROUTE);
                     myTransitDlg.setOnDismissListener(new DialogInterface.OnDismissListener() {
@@ -313,7 +320,7 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
             if (result.getRouteLines().size() > 1) {
                 nowResultransit = result;
                 if (!hasShownDialogue) {
-                    MyTransitDlg myTransitDlg = new MyTransitDlg(TripRouteActivity.this,
+                    myTransitDlg = new MyTransitDlg(TripRouteActivity.this,
                             result.getRouteLines(),
                             RouteLineAdapter.Type.TRANSIT_ROUTE);
                     myTransitDlg.setOnDismissListener(new DialogInterface.OnDismissListener() {
@@ -377,7 +384,7 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
             if (result.getRouteLines().size() > 1) {
                 nowResultdrive = result;
                 if (!hasShownDialogue) {
-                    MyTransitDlg myTransitDlg = new MyTransitDlg(TripRouteActivity.this,
+                    myTransitDlg = new MyTransitDlg(TripRouteActivity.this,
                             result.getRouteLines(),
                             RouteLineAdapter.Type.DRIVING_ROUTE);
                     myTransitDlg.setOnDismissListener(new DialogInterface.OnDismissListener() {
@@ -442,7 +449,7 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
             if (result.getRouteLines().size() > 1) {
                 nowResultbike = result;
                 if (!hasShownDialogue) {
-                    MyTransitDlg myTransitDlg = new MyTransitDlg(TripRouteActivity.this,
+                    myTransitDlg = new MyTransitDlg(TripRouteActivity.this,
                             result.getRouteLines(),
                             RouteLineAdapter.Type.DRIVING_ROUTE);
                     myTransitDlg.setOnDismissListener(new DialogInterface.OnDismissListener() {
