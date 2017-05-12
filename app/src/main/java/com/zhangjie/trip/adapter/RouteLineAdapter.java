@@ -1,6 +1,7 @@
 package com.zhangjie.trip.adapter;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,6 +20,7 @@ import java.util.List;
  */
 
 public class RouteLineAdapter extends BaseAdapter{
+    private static final String TAG = "RouteLineAdapter";
     private List<? extends  RouteLine> routeLines;
     private LayoutInflater layoutInflater;
     private Type mtype;
@@ -62,7 +64,8 @@ public class RouteLineAdapter extends BaseAdapter{
             case  TRANSIT_ROUTE:
             case WALKING_ROUTE:
             case BIKING_ROUTE:
-                holder.name.setText("路线" + (position + 1));
+                holder.name.setText("路线:" +(position+1));
+
                 int time = routeLines.get(position).getDuration();
                 if ( time / 3600 == 0 ) {
                     holder.lightNum.setText( "大约需要：" + time / 60 + "分钟" );

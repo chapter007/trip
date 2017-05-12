@@ -78,7 +78,7 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
     private RouteLine route=null;
     private int nodeIndex=-1;
     private OverlayManager routeOverlay;
-    private int nowSearchType;
+    private int nowSearchType=-1;
     private MassTransitRouteLine massroute;
     private MassTransitRouteResult nowResultmass;
     private TextView popupText;
@@ -110,14 +110,13 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
 
         mBtnPre.setVisibility(View.INVISIBLE);
         mBtnNext.setVisibility(View.INVISIBLE);
+
         mBaiduMap=myMap.getMap();
         mGeoCoder=GeoCoder.newInstance();
         mGeoCoder.setOnGetGeoCodeResultListener(this);
         //从经纬度找到地理位置
         mGeoCoder.reverseGeoCode(new ReverseGeoCodeOption().location(mLatLng));
-
-
-
+        mBaiduMap.setOnMapClickListener(this);
         mSearch = RoutePlanSearch.newInstance();
         mSearch.setOnGetRoutePlanResultListener(this);
 
@@ -463,7 +462,7 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
                             overlay.zoomToSpan();
                         }
 
-                    });
+                     });
                     myTransitDlg.show();
                     hasShownDialogue = true;
                 }
@@ -516,15 +515,19 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
         enNode=PlanNode.withCityNameAndPlaceName(city,endPoint);
 
         if (method.equals("bus")){
+            nowSearchType=1;
             mSearch.transitSearch((new TransitRoutePlanOption())
                     .from(stNode).city(city).to(enNode));
         }else if (method.equals("car")){
+            nowSearchType=2;
             mSearch.drivingSearch((new DrivingRoutePlanOption())
                     .from(stNode).to(enNode));
         }else if (method.equals("walk")){
+            nowSearchType=3;
             mSearch.walkingSearch((new WalkingRoutePlanOption())
                     .from(stNode).to(enNode));
         }else if (method.equals("bike")){
+            nowSearchType=4;
             mSearch.bikingSearch((new BikingRoutePlanOption())
                     .from(stNode).to(enNode));
         }
@@ -577,7 +580,8 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                     onItemInDlgClickListener.onItemClick(position);
-
+                    mBtnPre.setVisibility(View.VISIBLE);
+                    mBtnNext.setVisibility(View.VISIBLE);
                     dismiss();
                     hasShownDialogue = false;
                 }
