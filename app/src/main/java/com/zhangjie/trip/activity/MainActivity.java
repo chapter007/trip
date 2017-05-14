@@ -56,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
     private LocationService mLocationService;
     private Context mContext;
     private BaiduMap mBaiduMap;
-    private Button changNavMode;
+    private Button changNavMode,goHere;
     private MyLocationConfiguration.LocationMode mCurrentMode;
     private BitmapDescriptor mCurrentMarker;
     private double mCurrentLat=0.0;
@@ -92,10 +92,13 @@ public class MainActivity extends AppCompatActivity {
         myMap = (MapView) findViewById(R.id.bmapView);
         fab = (FloatingActionButton) findViewById(R.id.fab);
         mStateBar= (TextView) findViewById(R.id.status_bar);
+        goHere= (Button) findViewById(R.id.go_here);
         changNavMode= (Button) findViewById(R.id.change_nav_mode);
+
         mContext=getApplicationContext();
         mCurrentMode= MyLocationConfiguration.LocationMode.NORMAL;
         mBaiduMap=myMap.getMap();
+        goHere.setVisibility(View.INVISIBLE);
         mBaiduMap.setMyLocationEnabled(true);
         mLocationClient=new LocationClient(mContext);
         mLocationClient.registerLocationListener(mListener);
@@ -142,11 +145,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void initLocate(){
-        //这个服务有用到吗？并没有
-        mLocationService= ((LocationApplication) getApplication()).LocationService;
-        mLocationService.registerListener(mListener);
-        mLocationService.setLocationOption(mLocationService.getDefaultLocationClientOption());
+    private void goHere(View v){
+        Intent intent=new Intent(MainActivity.this,TripPlanActivity.class);
+        intent.putExtra("Location_x",mCurrentLat);
+        intent.putExtra("Location_y",mCurrentLon);
+        intent.putExtra("choosePt",currentPt);
+        startActivity(intent);
     }
 
     @Override
@@ -256,6 +260,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateMapState() {
+        goHere.setVisibility(View.VISIBLE);
         if (mStateBar == null) {
             return;
         }
@@ -316,6 +321,7 @@ public class MainActivity extends AppCompatActivity {
             }
             mCurrentLat = location.getLatitude();
             mCurrentLon = location.getLongitude();
+
             mCurrentAccracy = location.getRadius();
             locData = new MyLocationData.Builder()
                     .accuracy(location.getRadius())

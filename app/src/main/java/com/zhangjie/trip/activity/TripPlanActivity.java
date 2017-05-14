@@ -8,6 +8,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+
+import com.baidu.mapapi.model.LatLng;
 import com.zhangjie.trip.R;
 
 /**
@@ -22,6 +24,7 @@ public class TripPlanActivity extends AppCompatActivity implements View.OnClickL
     private Button bus,bike,walk,car;
     private Intent intent;
     private double mLocation_x,mLocation_y;
+    private LatLng choosePt;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -29,10 +32,12 @@ public class TripPlanActivity extends AppCompatActivity implements View.OnClickL
         intent=getIntent();
         mLocation_x= intent.getDoubleExtra("Location_x",0);
         mLocation_y= intent.getDoubleExtra("Location_y",0);//获得当前经纬度
+        choosePt=intent.getParcelableExtra("choosePt");//获得选中点
 
         setContentView(R.layout.activity_trip_plan);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
         startPoint= (EditText) findViewById(R.id.start_point);
         endPoint= (EditText) findViewById(R.id.end_point);
         bus= (Button) findViewById(R.id.bus);
@@ -40,6 +45,9 @@ public class TripPlanActivity extends AppCompatActivity implements View.OnClickL
         walk= (Button) findViewById(R.id.walk);
         car= (Button) findViewById(R.id.car);
 
+        if(choosePt!=null){
+            endPoint.setText("地图选中点");
+        }
     }
 
     @Override
@@ -76,6 +84,7 @@ public class TripPlanActivity extends AppCompatActivity implements View.OnClickL
 
         intent.putExtra("Location_x",mLocation_x);
         intent.putExtra("Location_y",mLocation_y);
+        intent.putExtra("choosePt",choosePt);
         intent.putExtra("startPoint",stPoint);
         intent.putExtra("endPoint",edPoint);
         switch (view.getId()){

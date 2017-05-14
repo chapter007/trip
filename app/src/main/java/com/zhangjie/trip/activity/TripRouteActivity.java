@@ -83,7 +83,7 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
     private MassTransitRouteResult nowResultmass;
     private TextView popupText;
     private double stPoint_x,stPoint_y;
-    private LatLng mLatLng;
+    private LatLng mLatLng,choosePt;
     private GeoCoder mGeoCoder;
     private DrivingRouteResult nowResultdrive;
     private WalkingRouteResult nowResultwalk;
@@ -103,6 +103,7 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
 
         endPoint=intent.getStringExtra("endPoint");
         method=intent.getStringExtra("method");
+        choosePt=intent.getParcelableExtra("choosePt");
 
         setContentView(R.layout.activity_trip_route);
         myMap= (MapView) findViewById(R.id.my_map_view);
@@ -519,7 +520,11 @@ public class TripRouteActivity extends AppCompatActivity implements OnGetRoutePl
         }else{
             stNode=PlanNode.withCityNameAndPlaceName(city,startPoint);
         }
-        enNode=PlanNode.withCityNameAndPlaceName(city,endPoint);
+        if(choosePt==null){
+            enNode=PlanNode.withCityNameAndPlaceName(city,endPoint);
+        }else{
+            enNode=PlanNode.withLocation(choosePt);
+        }
 
         if (method.equals("bus")){
             nowSearchType=1;
