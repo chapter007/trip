@@ -18,18 +18,18 @@
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="vertical">
 
         <TextView
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/status_bar"
             android:textColor="#000"/>
-        <Button
+
+        <android.support.v7.widget.AppCompatButton
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="到这里去"
-            android:onClick="goHere"
             android:id="@+id/go_here"/>
     </LinearLayout>
 

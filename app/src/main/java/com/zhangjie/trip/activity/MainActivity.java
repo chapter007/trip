@@ -112,6 +112,17 @@ public class MainActivity extends AppCompatActivity {
         mLocationClient.setLocOption(option);
         mLocationClient.start();
         initListener();
+
+        goHere.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent=new Intent(MainActivity.this,TripPlanActivity.class);
+                intent.putExtra("Location_x",mCurrentLat);
+                intent.putExtra("Location_y",mCurrentLon);
+                intent.putExtra("choosePt",currentPt);
+                startActivity(intent);
+            }
+        });
     }
 
     private void checkPermission(){
@@ -143,14 +154,6 @@ public class MainActivity extends AppCompatActivity {
             default:
                 break;
         }
-    }
-
-    private void goHere(View v){
-        Intent intent=new Intent(MainActivity.this,TripPlanActivity.class);
-        intent.putExtra("Location_x",mCurrentLat);
-        intent.putExtra("Location_y",mCurrentLon);
-        intent.putExtra("choosePt",currentPt);
-        startActivity(intent);
     }
 
     @Override
