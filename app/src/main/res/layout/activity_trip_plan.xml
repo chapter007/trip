@@ -9,13 +9,15 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
-        <EditText
+
+        <AutoCompleteTextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/start_point"
             android:layout_margin="20dp"
             android:hint="起点|我的位置"/>
-        <EditText
+
+        <AutoCompleteTextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/end_point"
