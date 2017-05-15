@@ -8,6 +8,29 @@
 
     <include layout="@layout/content_main" />
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:orientation="horizontal"
+        android:background="@color/colorAccent">
+
+        <AutoCompleteTextView
+            android:layout_width="280dp"
+            android:layout_height="48dp"
+            android:id="@+id/poi_search"
+            android:hint="搜索地点"
+            android:background="#fff"
+            android:textColor="#000"
+            android:textColorHint="#000" />
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="搜索"
+            android:id="@+id/poi_search_btn"/>
+    </LinearLayout>
+
+
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/fab"
         android:layout_width="wrap_content"
@@ -16,12 +39,25 @@
         android:layout_margin="@dimen/fab_margin"
         app:srcCompat="@drawable/ic_directions_white_48dp" />
 
-    <Button
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/change_nav_mode"
-        android:text="@string/action_normal"
+        android:orientation="vertical"
         android:layout_gravity="bottom|start"
-        android:layout_margin="16dp"/>
+        android:layout_margin="16dp">
+
+        <android.support.v7.widget.AppCompatButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="到这里去"
+            android:id="@+id/go_here"/>
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/change_nav_mode"
+            android:text="@string/action_normal"/>
+    </LinearLayout>
+
 
 </android.support.design.widget.CoordinatorLayout>

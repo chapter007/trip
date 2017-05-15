@@ -79,7 +79,6 @@ public class MainActivity extends AppCompatActivity {
     };
     private String touchType;
     private LatLng currentPt;
-    private TextView mStateBar;
     private BitmapDescriptor bdA = BitmapDescriptorFactory
             .fromResource(R.drawable.icon_marka);
 
@@ -91,7 +90,6 @@ public class MainActivity extends AppCompatActivity {
 
         myMap = (MapView) findViewById(R.id.bmapView);
         fab = (FloatingActionButton) findViewById(R.id.fab);
-        mStateBar= (TextView) findViewById(R.id.status_bar);
         goHere= (Button) findViewById(R.id.go_here);
         changNavMode= (Button) findViewById(R.id.change_nav_mode);
 
@@ -264,9 +262,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void updateMapState() {
         goHere.setVisibility(View.VISIBLE);
-        if (mStateBar == null) {
-            return;
-        }
+
         String state = "";
         if (currentPt == null) {
             state = "点击、长按、双击地图以获取经纬度和地图状态";
@@ -282,7 +278,7 @@ public class MainActivity extends AppCompatActivity {
         state += String.format(
                 "zoom=%.1f rotate=%d overlook=%d",
                 ms.zoom, (int) ms.rotate, (int) ms.overlook);
-        mStateBar.setText(state);
+        //mStateBar.setText(state);
     }
 
     public void sendLocation(final String location){

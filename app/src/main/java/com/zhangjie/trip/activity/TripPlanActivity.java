@@ -40,7 +40,7 @@ public class TripPlanActivity extends AppCompatActivity implements View.OnClickL
     private LatLng choosePt;
     private List<String> suggest;
     private SuggestionSearch mSuggestionSearch;
-    private ArrayAdapter<String> stAdapter = null,edAdapter=null;
+    private ArrayAdapter<String> sugAdapter = null;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -65,8 +65,8 @@ public class TripPlanActivity extends AppCompatActivity implements View.OnClickL
         mSuggestionSearch = SuggestionSearch.newInstance();
         mSuggestionSearch.setOnGetSuggestionResultListener(this);
 
-        startPoint.setAdapter(stAdapter);
-        endPoint.setAdapter(stAdapter);
+        startPoint.setAdapter(sugAdapter);
+        endPoint.setAdapter(sugAdapter);
         startPoint.setThreshold(1);
         endPoint.setThreshold(1);
 
@@ -192,15 +192,10 @@ public class TripPlanActivity extends AppCompatActivity implements View.OnClickL
                 suggest.add(info.key);
             }
         }
-        stAdapter = new ArrayAdapter<String>(TripPlanActivity.this,
+        sugAdapter = new ArrayAdapter<String>(TripPlanActivity.this,
                 android.R.layout.simple_dropdown_item_1line, suggest);
-        startPoint.setAdapter(stAdapter);
-
-
-        //edAdapter = new ArrayAdapter<String>(TripPlanActivity.this,
-        //        android.R.layout.simple_dropdown_item_1line, suggest);
-        endPoint.setAdapter(stAdapter);
-        //edAdapter.notifyDataSetChanged();
-        stAdapter.notifyDataSetChanged();
+        startPoint.setAdapter(sugAdapter);
+        endPoint.setAdapter(sugAdapter);
+        sugAdapter.notifyDataSetChanged();
     }
 }
