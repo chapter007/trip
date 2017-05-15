@@ -11,12 +11,17 @@ import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.ZoomControls;
 
 import com.baidu.location.BDLocation;
@@ -36,17 +41,34 @@ import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.model.LatLng;
+import com.baidu.mapapi.overlayutil.PoiOverlay;
+import com.baidu.mapapi.search.core.CityInfo;
+import com.baidu.mapapi.search.core.PoiInfo;
+import com.baidu.mapapi.search.core.SearchResult;
+import com.baidu.mapapi.search.poi.OnGetPoiSearchResultListener;
+import com.baidu.mapapi.search.poi.PoiCitySearchOption;
+import com.baidu.mapapi.search.poi.PoiDetailResult;
+import com.baidu.mapapi.search.poi.PoiDetailSearchOption;
+import com.baidu.mapapi.search.poi.PoiIndoorResult;
+import com.baidu.mapapi.search.poi.PoiResult;
+import com.baidu.mapapi.search.poi.PoiSearch;
+import com.baidu.mapapi.search.sug.OnGetSuggestionResultListener;
+import com.baidu.mapapi.search.sug.SuggestionResult;
+import com.baidu.mapapi.search.sug.SuggestionSearch;
+import com.baidu.mapapi.search.sug.SuggestionSearchOption;
 import com.zhangjie.trip.LocationApplication;
 import com.zhangjie.trip.R;
 import com.zhangjie.trip.service.LocationService;
 import com.zhangjie.trip.utils.Utils;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements OnGetSuggestionResultListener,
+        OnGetPoiSearchResultListener{
     private static final String TAG = "zhangjie map";
     private static final int UPDATE_LOCATE =0;
     private static final int BAIDU_READ_PHONE_STATE =100;
@@ -65,6 +87,11 @@ public class MainActivity extends AppCompatActivity {
     private MyLocationData locData;
     private float mCurrentDirection=0;
     private boolean isFirstLoc=true;
+    private AutoCompleteTextView mPoiSearchView;
+    private List<String> suggest;
+    private SuggestionSearch mSuggestionSearch;
+    private ArrayAdapter<String> sugAdapter = null;
+
 
     private Handler mHandler=new Handler(){
         @Override
@@ -81,6 +108,10 @@ public class MainActivity extends AppCompatActivity {
     private LatLng currentPt;
     private BitmapDescriptor bdA = BitmapDescriptorFactory
             .fromResource(R.drawable.icon_marka);
+    private PoiSearch mPoiSearch;
+    private String city="马鞍山";
+    private Button mPoiSearchBtn;
+    private int searchType;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,6 +123,8 @@ public class MainActivity extends AppCompatActivity {
         fab = (FloatingActionButton) findViewById(R.id.fab);
         goHere= (Button) findViewById(R.id.go_here);
         changNavMode= (Button) findViewById(R.id.change_nav_mode);
+        mPoiSearchView= (AutoCompleteTextView) findViewById(R.id.poi_search);
+        mPoiSearchBtn= (Button) findViewById(R.id.poi_search_btn);
 
         mContext=getApplicationContext();
         mCurrentMode= MyLocationConfiguration.LocationMode.NORMAL;
@@ -100,7 +133,18 @@ public class MainActivity extends AppCompatActivity {
         mBaiduMap.setMyLocationEnabled(true);
         mLocationClient=new LocationClient(mContext);
         mLocationClient.registerLocationListener(mListener);
+        mPoiSearchView.setThreshold(1);
+        mPoiSearchView.setAdapter(sugAdapter);
+        mPoiSearchBtn.setVisibility(View.INVISIBLE);
         checkPermission();
+
+        // 初始化搜索模块，注册搜索事件监听
+        mPoiSearch = PoiSearch.newInstance();
+        mPoiSearch.setOnGetPoiSearchResultListener(this);
+
+        // 初始化建议搜索模块，注册建议搜索事件监听
+        mSuggestionSearch = SuggestionSearch.newInstance();
+        mSuggestionSearch.setOnGetSuggestionResultListener(this);
 
         //开始定位
         LocationClientOption option = new LocationClientOption();
@@ -119,6 +163,32 @@ public class MainActivity extends AppCompatActivity {
                 intent.putExtra("Location_y",mCurrentLon);
                 intent.putExtra("choosePt",currentPt);
                 startActivity(intent);
+            }
+        });
+
+        mPoiSearchView.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                if (charSequence.length() <= 0) {
+                    return;
+                }
+
+                /**
+                 * 使用建议搜索服务获取建议列表，结果在onSuggestionResult()中更新
+                 */
+                mSuggestionSearch
+                        .requestSuggestion((new SuggestionSearchOption())
+                                .keyword(charSequence.toString()).city(city));
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+
             }
         });
     }
@@ -201,6 +271,16 @@ public class MainActivity extends AppCompatActivity {
                 intent.putExtra("Location_x",mCurrentLat);
                 intent.putExtra("Location_y",mCurrentLon);
                 startActivity(intent);
+            }
+        });
+
+        mPoiSearchBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                searchType=1;
+                String keystr = mPoiSearchView.getText().toString();
+                mPoiSearch.searchInCity((new PoiCitySearchOption())
+                        .city(city).keyword(keystr).pageNum(0));
             }
         });
     }
@@ -341,92 +421,88 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    private void getLocationData(BDLocation location) {
-        StringBuffer sb=new StringBuffer(256);
-        sb.append("time:");
-        sb.append(location.getTime());
-        sb.append("\nerror code : ");
-        sb.append(location.getLocType());    //获取类型类型
 
-        sb.append("\nlatitude : ");
-        sb.append(location.getLatitude());    //获取纬度信息
-
-        sb.append("\nlontitude : ");
-        sb.append(location.getLongitude());    //获取经度信息
-
-        sb.append("\nradius : ");
-        sb.append(location.getRadius());    //获取定位精准度
-
-        if (location.getLocType() == BDLocation.TypeGpsLocation){
-
-            // GPS定位结果
-            sb.append("\nspeed : ");
-            sb.append(location.getSpeed());    // 单位：公里每小时
-
-            sb.append("\nsatellite : ");
-            sb.append(location.getSatelliteNumber());    //获取卫星数
-
-            sb.append("\nheight : ");
-            sb.append(location.getAltitude());    //获取海拔高度信息，单位米
-
-            sb.append("\ndirection : ");
-            sb.append(location.getDirection());    //获取方向信息，单位度
-
-            sb.append("\naddr : ");
-            sb.append(location.getAddrStr());    //获取地址信息
-
-            sb.append("\ndescribe : ");
-            sb.append("gps定位成功");
-
-        } else if (location.getLocType() == BDLocation.TypeNetWorkLocation){
-
-            // 网络定位结果
-            sb.append("\naddr : ");
-            sb.append(location.getAddrStr());    //获取地址信息
-
-            sb.append("\noperationers : ");
-            sb.append(location.getOperators());    //获取运营商信息
-
-            sb.append("\ndescribe : ");
-            sb.append("网络定位成功");
-
-        } else if (location.getLocType() == BDLocation.TypeOffLineLocation) {
-
-            // 离线定位结果
-            sb.append("\ndescribe : ");
-            sb.append("离线定位成功，离线定位结果也是有效的");
-
-        } else if (location.getLocType() == BDLocation.TypeServerError) {
-
-            sb.append("\ndescribe : ");
-            sb.append("服务端网络定位失败，可以反馈IMEI号和大体定位时间到loc-bugs@baidu.com，会有人追查原因");
-
-        } else if (location.getLocType() == BDLocation.TypeNetWorkException) {
-
-            sb.append("\ndescribe : ");
-            sb.append("网络不同导致定位失败，请检查网络是否通畅");
-
-        } else if (location.getLocType() == BDLocation.TypeCriteriaException) {
-
-            sb.append("\ndescribe : ");
-            sb.append("无法获取有效定位依据导致定位失败，一般是由于手机的原因，处于飞行模式下一般会造成这种结果，可以试着重启手机");
-
+    @Override
+    public void onGetSuggestionResult(SuggestionResult res) {
+        mPoiSearchBtn.setVisibility(View.VISIBLE);
+        if (res == null || res.getAllSuggestions() == null) {
+            return;
         }
+        suggest = new ArrayList<String>();
+        for (SuggestionResult.SuggestionInfo info : res.getAllSuggestions()) {
+            if (info.key != null) {
 
-        sb.append("\nlocationdescribe : ");
-        sb.append(location.getLocationDescribe());    //位置语义化信息
-
-        List<Poi> list = location.getPoiList();    // POI数据
-        if (list != null) {
-            sb.append("\npoilist size = : ");
-            sb.append(list.size());
-            for (Poi p : list) {
-                sb.append("\npoi= : ");
-                sb.append(p.getId() + " " + p.getName() + " " + p.getRank());
+                suggest.add(info.key);
             }
         }
-        Log.i("BaiduLocationApiDem", sb.toString());
-        sendLocation(sb.toString());
+        sugAdapter = new ArrayAdapter<String>(MainActivity.this,
+                android.R.layout.simple_dropdown_item_1line, suggest);
+        mPoiSearchView.setAdapter(sugAdapter);
+        sugAdapter.notifyDataSetChanged();
+    }
+
+    @Override
+    public void onGetPoiResult(PoiResult result) {
+        if (result == null || result.error == SearchResult.ERRORNO.RESULT_NOT_FOUND) {
+            Toast.makeText(MainActivity.this, "未找到结果", Toast.LENGTH_LONG)
+                    .show();
+            return;
+        }
+        if (result.error == SearchResult.ERRORNO.NO_ERROR) {
+            mBaiduMap.clear();
+            PoiOverlay overlay = new MyPoiOverlay(mBaiduMap);
+            mBaiduMap.setOnMarkerClickListener(overlay);
+            overlay.setData(result);
+            overlay.addToMap();
+            overlay.zoomToSpan();
+
+            switch( searchType ) {
+                default:
+                    break;
+            }
+
+            return;
+        }
+        if (result.error == SearchResult.ERRORNO.AMBIGUOUS_KEYWORD) {
+
+            // 当输入关键字在本市没有找到，但在其他城市找到时，返回包含该关键字信息的城市列表
+            String strInfo = "在";
+            for (CityInfo cityInfo : result.getSuggestCityList()) {
+                strInfo += cityInfo.city;
+                strInfo += ",";
+            }
+            strInfo += "找到结果";
+            Toast.makeText(MainActivity.this, strInfo, Toast.LENGTH_LONG)
+                    .show();
+        }
+    }
+
+    @Override
+    public void onGetPoiDetailResult(PoiDetailResult poiDetailResult) {
+
+    }
+
+    @Override
+    public void onGetPoiIndoorResult(PoiIndoorResult poiIndoorResult) {
+
+    }
+
+    private class MyPoiOverlay extends PoiOverlay {
+
+        public MyPoiOverlay(BaiduMap baiduMap) {
+            super(baiduMap);
+        }
+
+        @Override
+        public boolean onPoiClick(int index) {
+            super.onPoiClick(index);
+            PoiInfo poi = getPoiResult().getAllPoi().get(index);
+            // if (poi.hasCaterDetails) {
+            mPoiSearch.searchPoiDetail((new PoiDetailSearchOption())
+                    .poiUid(poi.uid));
+            // }
+            return true;
+        }
     }
 }
 
